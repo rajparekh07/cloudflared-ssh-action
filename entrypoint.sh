@@ -9,6 +9,8 @@ else
     echo "ProxyCommand cloudflared access ssh --hostname %h --id $7 --secret $8" >> /root/.ssh/config
 fi
 
+echo "User $3" >> /root/.ssh/config
+
 echo "$5" > /root/.ssh/$4
 chmod 600 /root/.ssh/$4
 
