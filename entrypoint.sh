@@ -1,27 +1,55 @@
 #!/bin/sh -l
 
-# Set CF Access token to ENV so cloudflared can use it automatically
+# Arguments:
+# $1 = Host
+# $2 = Port
+# $3 = Username
+# $4 = Key filename (e.g., id_rsa)
+# $5 = Private key contents
+# $6 = SSH command to run
+# $7 = CF_ACCESS_CLIENT_ID
+# $8 = CF_ACCESS_CLIENT_SECRET
+
+set -e
+
+echo "⚙️ Setting up environment..."
+
+# Save CF Access token environment variables
 export CF_ACCESS_CLIENT_ID="$7"
 export CF_ACCESS_CLIENT_SECRET="$8"
 
-# Add Host to SSH config
+# Print token vars for debugging (comment out if sensitive)
+echo "Using CF_ACCESS_CLIENT_ID=${CF_ACCESS_CLIENT_ID:0:6}******"
+echo "Using CF_ACCESS_CLIENT_SECRET=${CF_ACCESS_CLIENT_SECRET:0:6}******"
+
+# Create SSH config
+mkdir -p /root/.ssh
+touch /root/.ssh/config
+
+# Add SSH host to config
 echo "Host $1" >> /root/.ssh/config
+echo "    HostName $1" >> /root/.ssh/config
+echo "    User $3" >> /root/.ssh/config
+echo "    IdentityFile /root/.ssh/$4" >> /root/.ssh/config
 
-# Add ProxyCommand (no --id/--secret since env is used)
-echo "ProxyCommand cloudflared access ssh --hostname %h" >> /root/.ssh/config
+# 💡 Inline ENV vars directly to ensure ProxyCommand sees them
+echo "    ProxyCommand env CF_ACCESS_CLIENT_ID=$7 CF_ACCESS_CLIENT_SECRET=$8 cloudflared access ssh --hostname %h" >> /root/.ssh/config
 
-# Set SSH user
-echo "User $3" >> /root/.ssh/config
-
-# Save the private key
+# Save private key
 echo "$5" > /root/.ssh/$4
 chmod 600 /root/.ssh/$4
 
-# Add host to known_hosts
-ssh-keyscan "$1" >> /root/.ssh/known_hosts
+# Add host to known_hosts (optional if using ProxyCommand)
+ssh-keyscan "$1" >> /root/.ssh/known_hosts 2>/dev/null || true
 
-# Debug output
+# Debug SSH config
+echo "📝 SSH Config:"
 cat /root/.ssh/config
 
-# Execute SSH command using the config
+# Debug ENV (optional, remove if security-sensitive)
+echo "🔐 Cloudflared ENV:"
+env | grep CF_ACCESS || echo "⚠️ CF_ACCESS env vars missing"
+
+# Execute SSH
+echo "🚀 Executing SSH command..."
 ssh -i /root/.ssh/$4 -p "$2" -o StrictHostKeyChecking=no -F /root/.ssh/config "$3@$1" -v "$6"
