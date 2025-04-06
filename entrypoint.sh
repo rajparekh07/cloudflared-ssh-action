@@ -20,4 +20,4 @@ cat /root/.ssh/config
 
 ssh -T -q -o StrictHostKeyChecking=no $3@$1
 
-ssh -i /root/.ssh/$4 $3@$1 -p $2 "$6" -v
+ssh -i /root/.ssh/$4 $3@$1 -p $2 -v "$6" 
