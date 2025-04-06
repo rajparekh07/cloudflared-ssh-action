@@ -50,6 +50,10 @@ cat /root/.ssh/config
 echo "🔐 Cloudflared ENV:"
 env | grep CF_ACCESS || echo "⚠️ CF_ACCESS env vars missing"
 
+curl -i "$1" \
+      -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+      -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET"
+
 # Execute SSH
 echo "🚀 Executing SSH command..."
 ssh -i /root/.ssh/$4 -p "$2" -o StrictHostKeyChecking=no -F /root/.ssh/config "$3@$1" -v "$6"
